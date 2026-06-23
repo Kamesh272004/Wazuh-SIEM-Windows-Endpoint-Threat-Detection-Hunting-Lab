@@ -20,7 +20,7 @@ The lab focuses on **four major activity clusters**:
 
 ---
 
-## Objective
+# Objective
 
 The objective of this lab was to answer the following SOC-style question:
 
@@ -30,9 +30,9 @@ To answer this, the endpoint was instrumented with Wazuh and Sysmon, and several
 
 ---
 
-## Lab Environment
+# Lab Environment
 
-### Monitoring Stack
+## Monitoring Stack
 - **SIEM / XDR Platform:** Wazuh
 - **Endpoint:** Windows 10
 - **Telemetry Source:** Sysmon + Windows Security Event Logs
@@ -41,7 +41,7 @@ To answer this, the endpoint was instrumented with Wazuh and Sysmon, and several
 
 ---
 
-## Lab Workflow
+# Lab Workflow
 
 This lab was executed in the following sequence:
 
@@ -50,7 +50,6 @@ This lab was executed in the following sequence:
    - fake logon attempts
    - registry persistence
    - suspicious command execution
-   - PowerShell / shortcut activity
 3. **Search for detections in Wazuh Threat Hunting**
 4. **Open event details and validate what Wazuh captured**
 5. **Map findings to attacker behavior and MITRE ATT&CK**
@@ -68,7 +67,7 @@ Before generating suspicious activity, the first step was to verify that the end
 - Wazuh agent configuration present and pointing to the manager
 
 ## 1) Wazuh Agent + Sysmon Verification
-![Wazuh Agent and Sysmon Verification](wazuh%20agent%20and%20sysmon%20verification.jpg)
+![Wazuh Agent and Sysmon Verification](01_Attack_Simulation/wazuh%20agent%20and%20sysmon%20verification.jpg)
 
 ## Findings
 The screenshot confirms that:
@@ -93,36 +92,9 @@ Once telemetry collection was verified, multiple suspicious actions were generat
 
 ---
 
-## Scenario A – PowerShell Shortcut / LNK Activity
+## Scenario A – Failed Windows Logon Attempts
 
-A PowerShell-based shortcut creation sequence was executed to generate suspicious command activity and produce endpoint telemetry associated with user execution / suspicious script behavior.
-
-## 2) PowerShell Shortcut / LNK Creation
-> Add your PowerShell screenshot here later if needed.
-
-## What the activity involved
-PowerShell commands were used to create a Windows shortcut (`.lnk`) object via `WScript.Shell`.
-
-The shortcut was configured to launch:
-- **Target path:** `cmd.exe`
-- **Arguments:** `/c calc.exe`
-
-An initial one-line attempt produced an error, after which the shortcut creation steps were executed line by line and saved successfully.
-
-## Why this matters
-From a SOC perspective, PowerShell-based shortcut creation is relevant because:
-
-- it shows scripted user-execution behavior,
-- it can be abused for phishing or persistence,
-- and it produces endpoint telemetry useful for detection engineering.
-
-This activity also complements later detections involving **cmd.exe** and **calc.exe**.
-
----
-
-## Scenario B – Failed Windows Logon Attempts
-
-The next activity was to generate failed authentication attempts using a fake user account.
+The first suspicious activity involved repeated failed authentication attempts using a fake user account.
 
 ### Command Used
 
@@ -130,8 +102,8 @@ The next activity was to generate failed authentication attempts using a fake us
 net use \\localhost /u:FakeHackerAccount Password123
 ```
 
-## 3) Failed Logon Attempts via Command Prompt
-![Failed Logon Attempts via Command Prompt](Failed%20log%20on.jpg)
+## 2) Failed Logon Attempts via Command Prompt
+![Failed Logon Attempts via Command Prompt](01_Attack_Simulation/Failed%20log%20on.jpg)
 
 ## What the screenshot shows
 The command prompt output shows repeated failed attempts using the username:
@@ -154,7 +126,7 @@ This activity is useful for validating whether:
 
 ---
 
-## Scenario C – Registry Run Key Persistence
+## Scenario B – Registry Run Key Persistence
 
 A persistence mechanism was created by adding a malicious autorun registry entry under the current user Run key.
 
@@ -164,8 +136,8 @@ A persistence mechanism was created by adding a malicious autorun registry entry
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run" /v "MaliciousUpdate" /t REG_SZ /d "C:\Windows\System32\calc.exe" /f
 ```
 
-## 4) Registry Persistence Creation via reg.exe
-![Registry Persistence Creation via reg.exe](Registry%20presistence.jpg)
+## 3) Registry Persistence Creation via reg.exe
+![Registry Persistence Creation via reg.exe](01_Attack_Simulation/Registry%20presistence.jpg)
 
 ## What the screenshot shows
 The command prompt shows successful creation of a registry value named:
@@ -189,23 +161,12 @@ Run Keys are a common Windows persistence mechanism. A SOC analyst should be abl
 
 ---
 
-## Scenario D – Kali Reconnaissance Activity
-
-A Kali Linux host was also used in the lab to perform reconnaissance activity against the Windows system.
-
-## 5) Kali Nmap Scan / Recon Activity
-> Add your Kali screenshot here later if needed.
-
-The Kali terminal was used to perform reconnaissance activity against the Windows endpoint as part of the wider lab workflow.
-
----
-
 # Phase 3 – Wazuh Threat Hunting Review
 
 After generating suspicious activity, the next step was to investigate the endpoint in **Wazuh Threat Hunting** and validate which detections appeared.
 
-## 6) Sysmon Events Overview in Wazuh
-![Sysmon Events Overview in Wazuh](alerts%20in%20wazuh.jpg)
+## 4) Sysmon Events Overview in Wazuh
+![Sysmon Events Overview in Wazuh](02_Wazuh_Investigation/alerts%20in%20wazuh.jpg)
 
 ## What this screenshot shows
 This screenshot provides the overall Wazuh event view for the Windows endpoint and shows that the platform captured multiple relevant detections, including:
@@ -224,8 +185,8 @@ This confirms that the endpoint telemetry was successfully flowing into Wazuh an
 
 The failed logon scenario was then investigated in detail.
 
-## 7) Multiple Logon Failures Detection
-![Multiple Logon Failures Detection](suspicios%20logon%20detected.png)
+## 5) Multiple Logon Failures Detection
+![Multiple Logon Failures Detection](02_Wazuh_Investigation/suspicios%20logon%20detected.png)
 
 ## What this screenshot shows
 Wazuh detected repeated authentication failures and surfaced them as a higher-level alert:
@@ -236,8 +197,8 @@ This indicates that Wazuh did not merely store isolated failed logon events — 
 
 ---
 
-## 8) Failed Logon Event Details
-![Failed Logon Event Details](suspicious%20logon%20investigation.png)
+## 6) Failed Logon Event Details
+![Failed Logon Event Details](02_Wazuh_Investigation/suspicious%20logon%20investigation.png)
 
 ## Key evidence visible in the event details
 The event details show:
@@ -259,8 +220,8 @@ This confirms that the repeated `net use` commands successfully generated Window
 
 The registry persistence activity was then validated inside Wazuh.
 
-## 9) Registry Run Key Detection
-![Registry Run Key Detection](registry%20presistence.png)
+## 7) Registry Run Key Detection
+![Registry Run Key Detection](02_Wazuh_Investigation/registry%20presistence.png)
 
 ## What this screenshot shows
 Wazuh detected the registry modification and raised an alert describing:
@@ -271,8 +232,8 @@ This confirms that the persistence action was not only logged by Sysmon, but als
 
 ---
 
-## 10) Registry Run Key Event Details
-![Registry Run Key Event Details](regitry%20presistence%20investiogation.png)
+## 8) Registry Run Key Event Details
+![Registry Run Key Event Details](02_Wazuh_Investigation/regitry%20presistence%20investiogation.png)
 
 ## Key evidence visible in the event details
 The detailed event view shows:
@@ -292,22 +253,18 @@ This proves that the exact persistence action performed from the command line wa
 
 ---
 
-# Phase 6 – Suspicious Registry Value / Secondary Detection
+# Phase 6 – Additional Persistence / Privilege-Related Detection
 
 In addition to the Run Key alert, Wazuh also surfaced another detection tied to the registry value.
 
-## 11) Base64-like Registry Value Detection
-![Base64-like Registry Value Detection](privilage%20and%20presistence%20detection.png)
+## 9) Additional Persistence / Privilege Detection
+![Additional Persistence / Privilege Detection](02_Wazuh_Investigation/privilage%20and%20presistence%20detection.png)
 
 ## What this screenshot shows
-The Wazuh alert describes:
-
-**Value added to registry key has Base64-like pattern**
-
-Although the registry value in this lab pointed to `calc.exe`, the screenshot demonstrates that Wazuh has content-based registry detection logic capable of flagging suspicious values based on pattern analysis.
+The alert highlights additional suspicious behavior related to persistence / privilege activity around the registry event.
 
 ## Why this matters
-This is useful from a SOC perspective because registry monitoring is not limited to **where** a value was written — it can also include logic about **what the value looks like**.
+This is useful from a SOC perspective because registry monitoring is not limited to **where** a value was written — it also helps analysts correlate suspicious persistence behavior with related endpoint activity.
 
 ---
 
@@ -319,8 +276,8 @@ The next part of the case study focused on the execution of `calc.exe` and relat
 
 ## A) Calc Process Detection
 
-## 12) Calc Process Detection
-![Calc Process Detection](suspicious%20shell%20command%20.png)
+## 10) Calc Process Detection
+![Calc Process Detection](02_Wazuh_Investigation/suspicious%20shell%20command%20.png)
 
 ## What this screenshot shows
 The Wazuh event view shows a detection associated with:
@@ -335,8 +292,8 @@ This indicates that the `calc.exe` execution was visible in the monitored teleme
 
 ---
 
-## 13) Calc Process Event Details
-![Calc Process Event Details](suspicious%20command%20shell%20investigation.png)
+## 11) Calc Process Event Details
+![Calc Process Event Details](02_Wazuh_Investigation/suspicious%20command%20shell%20investigation.png)
 
 ## Key evidence visible in the event details
 The detailed Sysmon event includes:
@@ -353,8 +310,8 @@ This confirms that Sysmon process creation logging was working correctly and tha
 
 ## B) Suspicious CMD Shell Detection
 
-## 14) Suspicious CMD Execution Detection
-![Suspicious CMD Execution Detection](account%20discovery.png)
+## 12) Suspicious CMD Execution Detection
+![Suspicious CMD Execution Detection](02_Wazuh_Investigation/account%20discovery.png)
 
 ## What this screenshot shows
 Wazuh flagged a detection with the rule description:
@@ -365,8 +322,8 @@ The event list associates this activity with the monitored Windows endpoint and 
 
 ---
 
-## 15) Suspicious CMD Execution Event Details
-![Suspicious CMD Execution Event Details](presistence%20and%20privilage%20investigation.png)
+## 13) Suspicious CMD Execution Event Details
+![Suspicious CMD Execution Event Details](02_Wazuh_Investigation/presistence%20and%20privilage%20investigation.png)
 
 ## Key evidence visible in the event details
 The detailed event panel shows:
